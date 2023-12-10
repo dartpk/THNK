@@ -7,9 +7,10 @@ import {
 import { applyGameStateSnapshotToScene } from "client/ApplyGameStateSnapshot";
 import { applySceneUpdateToScene } from "client/ApplySceneUpdate";
 import { THNKClientContext } from "./THNKClientContext";
+import { preLoadScene } from "utils/GdU";
 
 const logger = new gdjs.Logger("THNK - Client");
-const runClientTickPreEvent = (runtimeScene: gdjs.RuntimeScene) => {
+const runClientTickPreEvent = async (runtimeScene: gdjs.RuntimeScene) => {
   if (!runtimeScene.thnkClient) return;
   const { adapter } = runtimeScene.thnkClient;
   for (const message of adapter.getPendingMessages()) {
@@ -38,13 +39,16 @@ const runClientTickPreEvent = (runtimeScene: gdjs.RuntimeScene) => {
           );
           continue;
         }
+        //Ensure no more client ticks are executed until new scene is fully loaded
+        runtimeScene.thnkClient = undefined;
+        await preLoadScene(runtimeScene.getGame(), sceneName);
         const newScene = sceneSwitchMessage.isPause()
           ? runtimeScene.getGame().getSceneStack().push(sceneName)
           : runtimeScene.getGame().getSceneStack().replace(sceneName, true);
 
         //newScene.thnkClient = runtimeScene.thnkClient; //runtimeScene.thnkClient holds the old scene
         newScene.thnkClient = new THNKClientContext(
-          runtimeScene.thnkClient!.adapter,
+          adapter,
           newScene
         );
 
@@ -81,7 +85,7 @@ const runClientTickPreEvent = (runtimeScene: gdjs.RuntimeScene) => {
         // In the case the scene was just created it is necessary to keep it in client mode.
         //resumedScene.thnkClient = runtimeScene.thnkClient; //runtimeScene.thnkClient holds the old scene
         resumedScene.thnkClient = new THNKClientContext(
-          runtimeScene.thnkClient!.adapter,
+          adapter,
           resumedScene
         );
 

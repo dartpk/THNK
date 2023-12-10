@@ -1,5 +1,6 @@
 import { type ServerAdapter } from "adapters/Adapter";
 import { setupSceneAsServer } from "server/SetupServerScene";
+import { preLoadScene } from "utils/GdU";
 
 const logger = new gdjs.Logger("THNK - Server");
 /**
@@ -21,6 +22,7 @@ export const startServer = async (
     return;
   }
 
+  await preLoadScene(runtimeScene.getGame(), sceneName!);
   const scene = sceneName
     ? runtimeScene.getGame().getSceneStack().replace(sceneName, true)
     : runtimeScene;
